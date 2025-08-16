@@ -24,6 +24,11 @@ public class ErrorResponse{
         return ResponseEntity.status(code).body(errorResponse);
     }
 
+    public static ResponseEntity<ErrorResponse> error(int code, String message, Object data) {
+        ErrorResponse errorResponse = new ErrorResponse(code, message, data);
+        return ResponseEntity.status(code).body(errorResponse);
+    }
+
     public static ResponseEntity<ErrorResponse> error(ApiException apiException) {
         ErrorResponse errorResponse = new ErrorResponse(apiException.getCode(), apiException.getMessage(), apiException.getData());
         return ResponseEntity.status(apiException.getCode()).body(errorResponse);
