@@ -18,26 +18,25 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PaymentService {
     private final PaymentRepository paymentRepository;
+    private final RandomUtil randomUtil;
 
-    @Transactional // 인덱스 shopOrderNo 필요할듯.
+    @Transactional
     public PaymentCreateResponse approvePaymentRequest(PaymentCreateRequest paymentCreateRequest) {
-        // 동일 주문 번호인지 확인. 필요.
         Payment payment = paymentRepository.findByOrderNo(paymentCreateRequest.orderNo())
                 .orElse(null);
         if(payment != null) throw new ApiException(PaymentErrorCode.ALREADY_ORDER_NO);
 
-        boolean successFlag = RandomUtil.randomBoolean(98);
+        boolean successFlag = randomUtil.randomBoolean(98);
         Payment newPayment = null;
         if(successFlag) {
             newPayment = paymentCreateRequest.toSuccessDomain();
         }else {
-            newPayment = paymentCreateRequest.toFailedDomain();
+            throw new ApiException(PaymentErrorCode.APPROVE_FAILED);
         }
 
         newPayment = paymentRepository.save(newPayment);
-        if(!successFlag) throw new ApiException(PaymentErrorCode.APPROVE_FAILED);
 
-        boolean delayFlag = RandomUtil.randomBoolean(10);
+        boolean delayFlag = randomUtil.randomBoolean(10);
         if(delayFlag) {
             try {
                 Thread.sleep(20000);

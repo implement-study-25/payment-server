@@ -29,6 +29,6 @@ public class GlobalExceptionHandler {
         e.getBindingResult().getFieldErrors().forEach(error -> {
             errorMap.put(error.getField(), error.getDefaultMessage());
         });
-        return ErrorResponse.error(500, "입력데이터를 확인해주세요.",errorMap);
+        return ErrorResponse.error(400, "입력데이터를 확인해주세요.",errorMap);
     }
 }
