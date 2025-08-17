@@ -3,7 +3,9 @@ package com.study.paymentserver.domain.payment.service;
 import com.study.paymentserver.common.exception.ApiException;
 import com.study.paymentserver.common.util.RandomUtil;
 import com.study.paymentserver.common.util.TransactionIdGenerator;
+import com.study.paymentserver.domain.payment.controller.request.PaymentCancelRequest;
 import com.study.paymentserver.domain.payment.controller.request.PaymentCreateRequest;
+import com.study.paymentserver.domain.payment.controller.response.PaymentCancelResponse;
 import com.study.paymentserver.domain.payment.controller.response.PaymentCreateResponse;
 import com.study.paymentserver.domain.payment.entity.Payment;
 import com.study.paymentserver.domain.payment.enums.Currency;
@@ -18,7 +20,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,8 +38,9 @@ class PaymentServiceTest {
     private PaymentService paymentService;
 
     private PaymentCreateRequest request;
-    private PaymentCreateResponse response;
     private Payment payment;
+    private PaymentCancelRequest cancelRequest;
+    private Payment cancelledPayment;
 
     @BeforeEach
     void setUp() {
@@ -48,20 +50,35 @@ class PaymentServiceTest {
                 Currency.KRW,
                 "mall123"
         );
-        response = new PaymentCreateResponse(
+        cancelRequest = new PaymentCancelRequest("ORDER123", 10000, "mall123", TransactionIdGenerator.generateTransactionId(), null);
+        payment = new Payment(
+                1L,
                 "ORDER123",
                 "mall123",
-                TransactionIdGenerator.generateTransactionId(),
+                cancelRequest.transactionId(),
+                null,
+                PaymentStatus.CONFIRM,
                 10000,
-                Currency.KRW,
-                LocalDateTime.now()
-        );
-        payment = new Payment(1L, "ORDER123", "mall123", TransactionIdGenerator.generateTransactionId(), PaymentStatus.CONFIRM, 10000, Currency.KRW);
+                0,
+                null,
+                Currency.KRW);
+
+        cancelledPayment = new Payment(
+                1L,
+                "ORDER123",
+                "mall123",
+                cancelRequest.transactionId(),
+                TransactionIdGenerator.generateTransactionId(),
+                PaymentStatus.CANCELED,
+                10000,
+                10000,
+                "사용자 취소",
+                Currency.KRW);
     }
     
     @Nested
     @DisplayName("결제 승인 메서드 테스트")
-    class approvePaymentTest {
+    class ApprovePaymentTest {
         @Test
         @DisplayName("동일한 orderNo - 실패")
         void givenCreateRequest_whenCheckOrderNo_thenThrowAlreadyOrderNo() {
@@ -101,5 +118,43 @@ class PaymentServiceTest {
             assertThat(response.currency()).isEqualTo(Currency.KRW);
         }
     }
+    
+    @Nested
+    @DisplayName("결제 취소 메서드 테스트")
+    class CancelPaymentTest {
+        // 존재하지 않을때
+        @Test
+        @DisplayName("orderId, transactionId - not found - 404")
+        void givenCancelRequest_whenCancel_thenThrowNotFoundException() {
+            //given
+            when(paymentRepository.findByOrderNoAndTransactionId(any(), any())).thenReturn(Optional.empty());
+            //when && then
+            assertThatThrownBy(() -> paymentService.cancelPaymentRequest(cancelRequest))
+            .isInstanceOf(ApiException.class);
+        }
+        // 이미 취소 상태일때
+        @Test
+        @DisplayName("이미 취소 상태 - 400")
+        void givenCancelRequest_whenCancel_thenReturnResponse() {
+            when(paymentRepository.findByOrderNoAndTransactionId(any(), any())).thenReturn(Optional.of(cancelledPayment));
+
+            assertThatThrownBy(() -> paymentService.cancelPaymentRequest(cancelRequest))
+            .isInstanceOf(ApiException.class);
+        }
+
+        @Test
+        @DisplayName("취소 성공 - 200")
+        void givenCreateRequest_whenTrueFlag_thenReturnResponse() {
+            //given
+            when(paymentRepository.findByOrderNoAndTransactionId(any(), any())).thenReturn(Optional.of(payment));
+            //when
+            PaymentCancelResponse response = paymentService.cancelPaymentRequest(cancelRequest);
+            //then
+            assertThat(response).isNotNull();
+            assertThat(response.status()).isEqualTo(PaymentStatus.CANCELED);
+        }
+    }
+
+
   
 }
