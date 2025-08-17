@@ -3,6 +3,7 @@ package com.study.paymentserver.domain.payment.controller;
 import com.study.paymentserver.common.response.ApiResponse;
 import com.study.paymentserver.domain.payment.controller.request.PaymentCancelRequest;
 import com.study.paymentserver.domain.payment.controller.request.PaymentCreateRequest;
+import com.study.paymentserver.domain.payment.controller.response.PaymentCancelResponse;
 import com.study.paymentserver.domain.payment.controller.response.PaymentCreateResponse;
 import com.study.paymentserver.domain.payment.service.PaymentService;
 import jakarta.validation.Valid;
@@ -27,8 +28,8 @@ public class PaymentController {
     }
 
     @PostMapping("/cancel")
-    public ResponseEntity<Void> cancelPayment(@RequestBody PaymentCancelRequest request) {
-
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ApiResponse<PaymentCancelResponse>> cancelPayment(@RequestBody PaymentCancelRequest request) {
+        PaymentCancelResponse result = paymentService.cancelPaymentRequest(request);
+        return ApiResponse.success(result);
     }
 }
