@@ -4,6 +4,7 @@ import com.study.paymentserver.common.response.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -30,5 +31,12 @@ public class GlobalExceptionHandler {
             errorMap.put(error.getField(), error.getDefaultMessage());
         });
         return ErrorResponse.error(400, "입력데이터를 확인해주세요.",errorMap);
+    }
+
+    @ExceptionHandler(MissingRequestHeaderException.class)
+    public ResponseEntity<ErrorResponse> handleMissingRequestHeaderException(MissingRequestHeaderException e) {
+        log.info("MethodArgumentNotValidException Message: {}",e.getMessage());
+        log.info("Error occurred", e);
+        return ErrorResponse.error(400, e.getMessage());
     }
 }
