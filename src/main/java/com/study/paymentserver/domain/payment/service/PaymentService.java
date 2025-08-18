@@ -1,9 +1,10 @@
 package com.study.paymentserver.domain.payment.service;
 
 import com.study.paymentserver.common.exception.ApiException;
-import com.study.paymentserver.common.response.ApiResponse;
 import com.study.paymentserver.common.util.RandomUtil;
+import com.study.paymentserver.domain.payment.controller.request.PaymentCancelRequest;
 import com.study.paymentserver.domain.payment.controller.request.PaymentCreateRequest;
+import com.study.paymentserver.domain.payment.controller.response.PaymentCancelResponse;
 import com.study.paymentserver.domain.payment.controller.response.PaymentCreateResponse;
 import com.study.paymentserver.domain.payment.entity.Payment;
 import com.study.paymentserver.domain.payment.enums.PaymentErrorCode;
@@ -50,8 +51,11 @@ public class PaymentService {
 
 
     @Transactional
-    public void cancelPaymentRequest(PaymentCreateRequest paymentCreateRequest) {
-
-
+    public PaymentCancelResponse cancelPaymentRequest(PaymentCancelRequest request) {
+        Payment payment = paymentRepository.findByOrderNoAndTransactionId(request.orderNo(), request.transactionId())
+                .orElseThrow(() -> new ApiException(PaymentErrorCode.NOT_FOUND));
+        payment.checkConfirmStatus();
+        payment.cancel(request.amount(), request.cancelReason());
+        return PaymentCancelResponse.from(payment);
     }
 }

@@ -9,17 +9,15 @@ public record PaymentCancelRequest(
         @NotBlank(message = "주문번호는 필수 입력 사항입니다.")
         String orderNo,
 
-        @NotNull(message = "결제요청 금액은 필수 입력 사항입니다.")
         @Positive(message = "결제금액은 0보다 커야합니다.")
         int amount,
-
-        @NotBlank(message = "통화는 필수 입력 사항입니다.")
-        Currency currency,
 
         @NotBlank(message = "mallId는 필수 입력 사항입니다.")
         String mallId,
 
         @NotBlank(message = "transactionId는 필수 입력 사항입니다.")
-        String transactionId
+        String transactionId,
+
+        String cancelReason
 ) {
 }
