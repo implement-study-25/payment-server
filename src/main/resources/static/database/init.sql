@@ -8,7 +8,7 @@ CREATE TABLE payment (
                          cancel_transaction_id varchar(100) COMMENT '취소용 transaction id' UNIQUE,
                          amount int DEFAULT NULL COMMENT '결제 승인 가격',
                          cancel_amount int DEFAULT NULL COMMENT '결제 취소 가격',
-                         cancel_reason varchar(1000) DEFAULT NULL COMMENT '취소 사유'
+                         cancel_reason varchar(1000) DEFAULT NULL COMMENT '취소 사유',
                          currency enum('AUD','BRL','CAD','CHF','CNY','DKK','EUR','GBP','HKD','INR','JPY','KRW','MXN','NOK','RUB','SEK','SGD','THB','USD','VND') COMMENT '통화',
                          status enum('CANCELED','CONFIRM','FAILED') COMMENT '승인 상태',
                          created_at datetime(6) DEFAULT NULL COMMENT '생성일',

@@ -8,6 +8,7 @@ import com.study.paymentserver.domain.payment.controller.response.PaymentCancelR
 import com.study.paymentserver.domain.payment.controller.response.PaymentCreateResponse;
 import com.study.paymentserver.domain.payment.entity.Payment;
 import com.study.paymentserver.domain.payment.enums.PaymentErrorCode;
+import com.study.paymentserver.domain.payment.repository.PaymentCacheRepository;
 import com.study.paymentserver.domain.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,33 +21,37 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final RandomUtil randomUtil;
+    private final PaymentCacheRepository paymentCacheRepository;
 
     @Transactional
-    public PaymentCreateResponse approvePaymentRequest(PaymentCreateRequest paymentCreateRequest) {
+    public PaymentCreateResponse approvePaymentRequest(PaymentCreateRequest paymentCreateRequest, String idempotencyKey) {
+        PaymentCreateResponse cacheResponse = paymentCacheRepository.findByIdempotencyKey(idempotencyKey);
+        if(cacheResponse != null) return cacheResponse;
+
         Payment payment = paymentRepository.findByOrderNo(paymentCreateRequest.orderNo())
                 .orElse(null);
         if(payment != null) throw new ApiException(PaymentErrorCode.ALREADY_ORDER_NO);
 
         boolean successFlag = randomUtil.randomBoolean(98);
-        Payment newPayment = null;
-        if(successFlag) {
-            newPayment = paymentCreateRequest.toSuccessDomain();
-        }else {
-            throw new ApiException(PaymentErrorCode.APPROVE_FAILED);
-        }
+        if(!successFlag) throw new ApiException(PaymentErrorCode.APPROVE_FAILED);
 
+        Payment newPayment = paymentCreateRequest.toSuccessDomain();
         newPayment = paymentRepository.save(newPayment);
 
-        boolean delayFlag = randomUtil.randomBoolean(10);
+        PaymentCreateResponse result = PaymentCreateResponse.from(newPayment);
+        paymentCacheRepository.save(result, idempotencyKey);
+
+        boolean delayFlag = randomUtil.randomBoolean(5);
         if(delayFlag) {
             try {
-                Thread.sleep(20000);
+                Thread.sleep(3000);
             }catch (InterruptedException e) {
                 e.printStackTrace();
                 log.error("딜레이가 중단되었습니다.");
             }
         }
-        return PaymentCreateResponse.from(newPayment);
+
+        return result;
     }
 
 

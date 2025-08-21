@@ -46,6 +46,7 @@ class PaymentControllerTest {
     private PaymentCreateResponse paymentCreateResponse;
     private PaymentCancelRequest paymentCancelRequest;
     private PaymentCancelResponse paymentCancelResponse;
+    private String idempotencyKey;
 
     @BeforeEach
     void setUp() {
@@ -76,7 +77,7 @@ class PaymentControllerTest {
                 "사용자 취소",
                 LocalDateTime.now()
         );
-
+        idempotencyKey = TransactionIdGenerator.generateTransactionId();
     }
 
     @Nested
@@ -86,9 +87,10 @@ class PaymentControllerTest {
         @DisplayName("결제 승인 성공 - 200")
         void givenCreateRequest_whenApprove_thenReturnCreateResponse() throws Exception {
             //given
-            given(paymentService.approvePaymentRequest(paymentCreateRequest)).willReturn(paymentCreateResponse);
+            given(paymentService.approvePaymentRequest(paymentCreateRequest, idempotencyKey)).willReturn(paymentCreateResponse);
             //when && then
             mockMvc.perform(post("/api/v1/payments")
+                            .header("idempotency-key", idempotencyKey)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(paymentCreateRequest)))
                     .andExpect(status().isOk())
@@ -106,6 +108,7 @@ class PaymentControllerTest {
             paymentCreateRequest = new PaymentCreateRequest(null, 10000, Currency.KRW, "mall123");
             //when && then
             mockMvc.perform(post("/api/v1/payments")
+                    .header("idempotency-key", idempotencyKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(paymentCreateRequest)))
                     .andExpect(status().isBadRequest())
@@ -118,10 +121,11 @@ class PaymentControllerTest {
         @DisplayName("결제 실패 - 422")
         void givenCreateRequest_whenApprove_thenReturnApiException() throws Exception {
             //given
-            given(paymentService.approvePaymentRequest(paymentCreateRequest))
+            given(paymentService.approvePaymentRequest(paymentCreateRequest, idempotencyKey))
                     .willThrow(new ApiException(PaymentErrorCode.APPROVE_FAILED));
             //when && then
             mockMvc.perform(post("/api/v1/payments")
+                    .header("idempotency-key", idempotencyKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(paymentCreateRequest)))
                     .andExpect(status().is(422))
@@ -132,10 +136,11 @@ class PaymentControllerTest {
         @DisplayName("orderNo가 이미 존재함 - 409")
         void givenCreateRequest_whenApprove_thenReturnAlreadyOrderNoException() throws Exception {
             //given
-            given(paymentService.approvePaymentRequest(paymentCreateRequest))
+            given(paymentService.approvePaymentRequest(paymentCreateRequest, idempotencyKey))
                     .willThrow(new ApiException(PaymentErrorCode.ALREADY_ORDER_NO));
             //when && then
             mockMvc.perform(post("/api/v1/payments")
+                    .header("idempotency-key", idempotencyKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(paymentCreateRequest)))
                     .andExpect(status().is(409))
