@@ -127,7 +127,7 @@ class PaymentServiceTest {
             when(paymentRepository.findByOrderNo(any())).thenReturn(Optional.empty());
             when(randomUtil.randomBoolean(98)).thenReturn(true);
             when(paymentRepository.save(any())).thenReturn(payment);
-            when(randomUtil.randomBoolean(10)).thenReturn(false);
+            when(randomUtil.randomBoolean(5)).thenReturn(false);
             //when
             PaymentCreateResponse response = paymentService.approvePaymentRequest(request, idempotencyKey);
             //then
